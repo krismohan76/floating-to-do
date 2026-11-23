@@ -9,8 +9,10 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
 
 class MainActivity : Activity() {
@@ -20,6 +22,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val pad = (24 * resources.displayMetrics.density).toInt()
+        val prefs = getSharedPreferences("todo", MODE_PRIVATE)
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -43,9 +46,41 @@ class MainActivity : Activity() {
                 )
             }
         }
+
+        // Opacity slider: 20% (very see-through) to 100% (solid). Applies live.
+        val opacity = prefs.getInt("opacity", 85).coerceIn(20, 100)
+        val opacityLabel = TextView(this).apply {
+            text = "Opacity: $opacity%  (lower = more see-through)"
+            textSize = 16f
+            gravity = Gravity.CENTER
+            setPadding(0, pad, 0, 0)
+        }
+        val seek = SeekBar(this).apply {
+            max = 80
+            progress = opacity - 20
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    val value = progress + 20
+                    opacityLabel.text = "Opacity: $value%  (lower = more see-through)"
+                    prefs.edit().putInt("opacity", value).apply()
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
+
         layout.addView(status)
         layout.addView(startBtn)
         layout.addView(stopBtn)
+        layout.addView(opacityLabel)
+        layout.addView(
+            seek,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        )
         setContentView(layout)
     }
 
